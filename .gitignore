@@ -1,3 +1,7 @@
+# Created by https://www.toptal.com/developers/gitignore/api/go
+# Edit at https://www.toptal.com/developers/gitignore?templates=go
+
+### Go ###
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -13,3 +17,12 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+### Go Patch ###
+/vendor/
+/Godeps/
+
+### ide config ###
+.idea
+
+# End of https://www.toptal.com/developers/gitignore/api/go
