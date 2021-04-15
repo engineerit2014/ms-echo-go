@@ -4,14 +4,16 @@ import (
 	"fmt"
 	"github.com/go-pg/pg/v10"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	middleKit "github.com/laironacosta/kit-go/middleware/echo"
 	pgKit "github.com/laironacosta/kit-go/postgresql"
 	"github.com/laironacosta/ms-echo-go/controllers"
 	"github.com/laironacosta/ms-echo-go/migrations"
 	repo "github.com/laironacosta/ms-echo-go/repository"
 	"github.com/laironacosta/ms-echo-go/router"
 	"github.com/laironacosta/ms-echo-go/services"
-	"github.com/signalfx/golib/errors"
+	"github.com/pkg/errors"
 )
 
 // cfg is the struct type that contains fields that stores the necessary configuration
@@ -26,9 +28,13 @@ var cfg struct {
 
 func main() {
 	echo := echo.New()
+	echo.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "method=${method}, uri=${uri}, status=${status}, latency_human={latency_human}\n",
+	}))
+	echo.Use(middleware.Recover())
 
 	if err := envconfig.Process("LIST", &cfg); err != nil {
-		err = errors.Wrap(err, errors.New("parse environment variables"))
+		err = errors.Wrap(err, "parse environment variables")
 		return
 	}
 
@@ -44,7 +50,9 @@ func main() {
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
-	r := router.NewRouter(echo, userController)
+	m := middleKit.NewErrorHandlerMiddleware()
+
+	r := router.NewRouter(echo, userController, m)
 	r.Init()
 
 	echo.Start(":8080") // listen and serve on 0.0.0.0:8080
