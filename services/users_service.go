@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	respKit "github.com/laironacosta/kit-go/middleware/responses"
 	"github.com/laironacosta/ms-echo-go/controllers/dto"
+	"github.com/laironacosta/ms-echo-go/enums"
 	repo "github.com/laironacosta/ms-echo-go/repository"
 	"strings"
 )
@@ -29,43 +31,49 @@ func (s *UserService) Create(ctx context.Context, request dto.CreateUserRequest)
 	if err := s.userRepo.Create(ctx, request); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (s *UserService) GetByEmail(ctx context.Context, email string) (*dto.User, error) {
-	e := strings.TrimSpace(email)
-	if e == "" {
-		return &dto.User{}, errors.New("email could not be empty")
+	fmt.Printf("Service email received: %+v \n", email)
+	email = strings.TrimSpace(email)
+	fmt.Printf("Service email received2: %+v \n", email)
+	if email == "" {
+		return &dto.User{}, respKit.GenericBadRequestError(enums.ErrorEmailNotEmptyCode, enums.ErrorEmailNotEmptyMsg)
 	}
 
-	u, err := s.userRepo.GetByEmail(ctx, e)
+	u, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		return &dto.User{}, err
 	}
+
 	return u, nil
 }
 
 func (s *UserService) UpdateByEmail(ctx context.Context, request dto.UpdateUserRequest, email string) error {
-	e := strings.TrimSpace(email)
-	if e == "" {
-		return errors.New("email could not be empty")
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return respKit.GenericBadRequestError(enums.ErrorEmailNotEmptyCode, enums.ErrorEmailNotEmptyMsg)
 	}
 
-	if err := s.userRepo.UpdateByEmail(ctx, request, e); err != nil {
+	if err := s.userRepo.UpdateByEmail(ctx, request, email); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (s *UserService) DeleteByEmail(ctx context.Context, email string) error {
-	e := strings.TrimSpace(email)
-	if e == "" {
-		return errors.New("email could not be empty")
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return respKit.GenericBadRequestError(enums.ErrorEmailNotEmptyCode, enums.ErrorEmailNotEmptyMsg)
 	}
 
-	err := s.userRepo.DeleteByEmail(ctx, e)
+	err := s.userRepo.DeleteByEmail(ctx, email)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

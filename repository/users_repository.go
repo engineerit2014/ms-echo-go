@@ -2,8 +2,12 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-pg/pg/v10"
+	respKit "github.com/laironacosta/kit-go/middleware/responses"
 	"github.com/laironacosta/ms-echo-go/controllers/dto"
+	"github.com/laironacosta/ms-echo-go/enums"
+	"strings"
 )
 
 type UserRepositoryInterface interface {
@@ -30,8 +34,13 @@ func (r *UserRepository) Create(ctx context.Context, request dto.CreateUserReque
 	}
 	_, err := r.db.Model(&u).Context(ctx).Insert()
 	if err != nil {
-		return err
+		if pgErr := err.(pg.Error); pgErr != nil && strings.Contains(pgErr.Error(), enums.ErrorDBDuplicatedKeyMsg) {
+			return respKit.GenericAlreadyExistsError(enums.ErrorEmailExistsCode, fmt.Sprintf(enums.ErrorEmailExistsMsg, request.Email))
+		}
+
+		return respKit.GenericBadRequestError(enums.ErrorInsertCode, err.Error())
 	}
+
 	return nil
 }
 
@@ -39,25 +48,39 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*dto.Use
 	u := dto.User{}
 	err := r.db.Model(&u).Context(ctx).Where("email = ?", email).Select()
 	if err != nil {
-		return &u, err
+		switch err {
+		case pg.ErrNoRows:
+			return &u, respKit.GenericNotFoundError(enums.ErrorEmailNotFoundCode, fmt.Sprintf(enums.ErrorEmailNotFoundMsg, email))
+		default:
+			return &u, respKit.GenericBadRequestError(enums.ErrorGetByEmailCode, err.Error())
+		}
 	}
+
 	return &u, nil
 }
 
 func (r *UserRepository) UpdateByEmail(ctx context.Context, request dto.UpdateUserRequest, email string) error {
-	u := dto.User{}
-	_, err := r.db.Model(&u).Context(ctx).Set("name = ?", request.Name).Where("email = ?", email).Update()
-	if err != nil {
-		return err
+	err := r.db.Model(&dto.User{}).Context(ctx).Where("email = ?", email).Select()
+	if err != nil && err == pg.ErrNoRows {
+		return respKit.GenericNotFoundError(enums.ErrorEmailNotFoundCode, fmt.Sprintf(enums.ErrorEmailNotFoundMsg, email))
 	}
+
+	if _, err := r.db.Model(&dto.User{}).Context(ctx).Set("name = ?", request.Name).Where("email = ?", email).Update(); err != nil {
+		return respKit.GenericBadRequestError(enums.ErrorUpdateCode, err.Error())
+	}
+
 	return nil
 }
 
 func (r *UserRepository) DeleteByEmail(ctx context.Context, email string) error {
-	u := dto.User{}
-	_, err := r.db.Model(&u).Context(ctx).Where("email = ?", email).Delete()
-	if err != nil {
-		return err
+	if _, err := r.db.Model(&dto.User{}).Context(ctx).Where("email = ?", email).Delete(); err != nil {
+		switch err {
+		case pg.ErrNoRows:
+			return respKit.GenericNotFoundError(enums.ErrorEmailNotFoundCode, fmt.Sprintf(enums.ErrorEmailNotFoundMsg, email))
+		default:
+			return respKit.GenericBadRequestError(enums.ErrorDeleteCode, err.Error())
+		}
 	}
+
 	return nil
 }
