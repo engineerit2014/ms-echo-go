@@ -9,10 +9,12 @@ import (
 	middleKit "github.com/laironacosta/kit-go/middleware/echo"
 	pgKit "github.com/laironacosta/kit-go/postgresql"
 	"github.com/laironacosta/ms-echo-go/controllers"
+	"github.com/laironacosta/ms-echo-go/middlewares"
 	"github.com/laironacosta/ms-echo-go/migrations"
 	repo "github.com/laironacosta/ms-echo-go/repository"
 	"github.com/laironacosta/ms-echo-go/router"
 	"github.com/laironacosta/ms-echo-go/services"
+	"github.com/laironacosta/ms-echo-go/translators"
 	"github.com/pkg/errors"
 )
 
@@ -24,6 +26,7 @@ var cfg struct {
 	DBName string `envconfig:"DB_NAME" default:"user"`
 	DBHost string `envconfig:"DB_HOST" default:"db"`
 	DBPort int    `envconfig:"DB_PORT" default:"5432"`
+	Locale string `envconfig:"LOCALE"  default:"es"`
 }
 
 func main() {
@@ -46,13 +49,16 @@ func main() {
 	})
 	migrations.Init(db)
 
+	i18n := translators.NewI18n(cfg.Locale)
+
 	userRepo := repo.NewUserRepository(db)
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
-	m := middleKit.NewErrorHandlerMiddleware()
+	errorHanlderMiddle := middleKit.NewErrorHandlerMiddleware()
+	i18nMiddle := middlewares.NewI18nMiddleware(i18n)
 
-	r := router.NewRouter(echo, userController, m)
+	r := router.NewRouter(echo, userController, errorHanlderMiddle, i18nMiddle)
 	r.Init()
 
 	echo.Start(":8080") // listen and serve on 0.0.0.0:8080
