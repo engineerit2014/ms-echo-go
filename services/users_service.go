@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	respKit "github.com/laironacosta/kit-go/middleware/responses"
 	"github.com/laironacosta/ms-echo-go/controllers/dto"
 	"github.com/laironacosta/ms-echo-go/enums"
@@ -36,9 +35,7 @@ func (s *UserService) Create(ctx context.Context, request dto.CreateUserRequest)
 }
 
 func (s *UserService) GetByEmail(ctx context.Context, email string) (*dto.User, error) {
-	fmt.Printf("Service email received: %+v \n", email)
 	email = strings.TrimSpace(email)
-	fmt.Printf("Service email received2: %+v \n", email)
 	if email == "" {
 		return &dto.User{}, respKit.GenericBadRequestError(enums.ErrorEmailNotEmptyCode, enums.ErrorEmailNotEmptyMsg)
 	}

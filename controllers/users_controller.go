@@ -9,6 +9,7 @@ import (
 	"github.com/laironacosta/ms-echo-go/controllers/dto"
 	"github.com/laironacosta/ms-echo-go/enums"
 	"github.com/laironacosta/ms-echo-go/services"
+	"github.com/laironacosta/ms-echo-go/translators"
 	"net/http"
 )
 
@@ -30,6 +31,8 @@ func NewUserController(userService services.UserServiceInterface) UserController
 }
 
 func (ctr *UserController) Create(c echo.Context) error {
+	dictLang := c.Request().Context().Value(enums.I18nKey).(translators.DictLang)
+
 	u := dto.CreateUserRequest{}
 	if err := c.Bind(&u); err != nil {
 		return respKit.GenericBadRequestError(enums.ErrorRequestBodyCode, err.Error())
@@ -45,7 +48,7 @@ func (ctr *UserController) Create(c echo.Context) error {
 
 	log.Infof("Request received: %+v \n", u)
 	return c.JSON(http.StatusOK, dto.Response{
-		Message: "created",
+		Message: dictLang.GetMsg(enums.UserCreated),
 	})
 }
 
@@ -64,6 +67,8 @@ func (ctr *UserController) GetByEmail(c echo.Context) error {
 }
 
 func (ctr *UserController) UpdateByEmail(c echo.Context) error {
+	dictLang := c.Request().Context().Value(enums.I18nKey).(translators.DictLang)
+
 	u := dto.UpdateUserRequest{}
 	if err := c.Bind(&u); err != nil {
 		return respKit.GenericBadRequestError(enums.ErrorRequestBodyCode, err.Error())
@@ -83,11 +88,13 @@ func (ctr *UserController) UpdateByEmail(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, dto.Response{
-		Message: "updated",
+		Message: fmt.Sprintf(dictLang.GetMsg(enums.UserUpdated), e),
 	})
 }
 
 func (ctr *UserController) DeleteByEmail(c echo.Context) error {
+	dictLang := c.Request().Context().Value(enums.I18nKey).(translators.DictLang)
+
 	e := c.Param("email")
 
 	fmt.Printf("Path param received: %+v \n", e)
@@ -97,6 +104,6 @@ func (ctr *UserController) DeleteByEmail(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, dto.Response{
-		Message: "deleted",
+		Message: dictLang.GetMsg(enums.UserDeleted),
 	})
 }
